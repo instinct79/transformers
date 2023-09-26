@@ -1838,6 +1838,11 @@ class Trainer:
                     sampler = sampler if sampler is not None else []
                     _ = list(sampler)
 
+        # get a batch of data
+        for step, inputs in enumerate(train_dataloader):
+            saved_inputs = inputs
+            break 
+        
         total_batched_samples = 0
         for epoch in range(epochs_trained, num_train_epochs):
             epoch_iterator = train_dataloader
@@ -1865,7 +1870,15 @@ class Trainer:
                 rng_to_sync = True
 
             step = -1
-            for step, inputs in enumerate(epoch_iterator):
+            skip_loader = os.getenv("SKIP_LOADER") == '1'
+            # only use one batch of data when skip loader
+            if skip_loader:
+                epoch_iterator_override = [saved_inputs for i in range(len(epoch_iterator))]
+                logger.info("\n\n Skipping the data loader!!!!!! \n\n")
+            else:
+                epoch_iterator_override = epoch_iterator
+
+            for step, inputs in enumerate(epoch_iterator_override):
                 total_batched_samples += 1
                 if rng_to_sync:
                     self._load_rng_state(resume_from_checkpoint)
